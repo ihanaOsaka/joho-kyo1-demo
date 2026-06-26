@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>情共1 文書自動作成 デモ</title>
+<style>
+  :root{
+    --bg:#eef2f4; --card:#ffffff; --ink:#1b2a32; --muted:#5f7079; --line:#e2e8ec;
+    --teal:#0f6e56; --tealbg:#e1f5ee; --teal2:#1d9e75;
+    --amber:#854f0b; --amberbg:#faeeda; --graybg:#f1efe8; --red:#a32d2d; --redbg:#fceaea;
+    --blue:#185fa5; --bluebg:#e6f1fb;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;
+    line-height:1.7;font-size:15px}
+  .phone{max-width:440px;margin:0 auto;min-height:100vh;background:var(--bg);
+    display:flex;flex-direction:column}
+  /* header */
+  .top{position:sticky;top:0;z-index:20;background:var(--teal);color:#fff;padding:14px 16px 10px}
+  .top h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.02em}
+  .top p{margin:3px 0 0;font-size:11.5px;opacity:.85}
+  .tabs{display:flex;gap:6px;margin-top:11px}
+  .tab{flex:1;text-align:center;padding:9px 0;border-radius:9px 9px 0 0;font-size:13px;font-weight:600;
+    background:rgba(255,255,255,.16);color:#fff;cursor:pointer;border:none}
+  .tab.on{background:var(--bg);color:var(--teal)}
+  .wrap{padding:14px 14px 40px}
+  .hide{display:none}
+  /* cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:11px}
+  .note{background:var(--amberbg);border:1px solid #e9d9b4;border-radius:11px;padding:11px 13px;margin-bottom:12px;font-size:12.5px;color:#4a3a1a}
+  .note b{color:var(--amber)}
+  .lvrow{display:flex;align-items:flex-start;gap:11px}
+  .badge{flex:none;width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:14px;background:var(--tealbg);color:var(--teal);line-height:1.1;flex-direction:column}
+  .badge small{font-size:8px;font-weight:600;opacity:.8}
+  .badge.opt{background:var(--graybg);color:var(--muted)}
+  .badge.no{background:var(--redbg);color:var(--red)}
+  .lvbody{flex:1;min-width:0}
+  .lvbody h3{margin:0 0 2px;font-size:14.5px;font-weight:600}
+  .lvbody .meta{font-size:11px;color:var(--muted);margin:0 0 4px}
+  .lvbody p{margin:0;font-size:12.5px;color:#374850}
+  .pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:20px;margin-right:5px;font-weight:600;vertical-align:1px}
+  .pill.ai{background:var(--bluebg);color:var(--blue)}
+  .pill.rec{background:var(--teal);color:#fff}
+  .pill.opt{background:var(--graybg);color:var(--muted)}
+  .seclabel{font-size:11.5px;font-weight:700;color:var(--muted);margin:16px 4px 8px;letter-spacing:.04em}
+  /* form */
+  label.fld{display:block;margin-bottom:10px;font-size:12px;color:var(--muted);font-weight:600}
+  label.fld span{display:block;margin-bottom:4px}
+  .fld input,.fld select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-size:14px;
+    background:#fbfcfd;color:var(--ink);font-family:inherit}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .radios{display:flex;gap:8px}
+  .radios button{flex:1;padding:8px;border:1px solid var(--line);background:#fbfcfd;border-radius:9px;font-size:13px;
+    cursor:pointer;color:var(--ink);font-family:inherit}
+  .radios button.on{background:var(--tealbg);border-color:var(--teal2);color:var(--teal);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+  .chip{padding:7px 11px;border:1px solid var(--line);background:#fbfcfd;border-radius:20px;font-size:12.5px;
+    cursor:pointer;color:#374850;user-select:none}
+  .chip.on{background:var(--tealbg);border-color:var(--teal2);color:var(--teal);font-weight:600}
+  .chip.warn.on{background:var(--amberbg);border-color:#e1b766;color:var(--amber)}
+  .btn{display:block;width:100%;padding:13px;border:none;border-radius:11px;background:var(--teal);color:#fff;
+    font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+  .btn.sec{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
+  .btn.ghost{background:var(--graybg);color:var(--ink);font-weight:600;font-size:13px}
+  .btnrow{display:flex;gap:9px;margin-top:9px}
+  .btnrow .btn{margin-top:0}
+  /* document preview */
+  .doc{background:#fff;border:1px solid #cfd8dd;border-radius:6px;padding:16px 15px;font-size:12.5px;color:#1b2a32;
+    box-shadow:0 1px 6px rgba(20,40,50,.06)}
+  .doc h2{font-size:14px;text-align:center;margin:0 0 3px;font-weight:700}
+  .doc .lead{font-size:11.5px;text-align:center;color:#46555d;margin:0 0 12px}
+  .doc table{width:100%;border-collapse:collapse;margin:0 0 11px;font-size:11.5px}
+  .doc td{border:1px solid #c9d2d7;padding:5px 7px;vertical-align:top}
+  .doc td.k{background:#f4f7f8;width:34%;color:#46555d;font-weight:600;white-space:nowrap}
+  .doc .field{margin-bottom:10px}
+  .doc .field h4{margin:0 0 3px;font-size:11.5px;color:var(--teal);font-weight:700;border-left:3px solid var(--teal2);padding-left:6px}
+  .doc ul{margin:4px 0 0;padding-left:18px}
+  .doc ul li{margin-bottom:3px}
+  .doc .care{background:#fbf6ec;border:1px solid #ecdcbb;border-radius:7px;padding:8px 10px;font-size:11.5px}
+  .doc .care li{color:#4a3a1a}
+  .doc .body{white-space:pre-wrap;font-size:12px;line-height:1.85}
+  .doc .sign{text-align:right;margin-top:10px;font-size:11.5px;color:#46555d}
+  .disc{font-size:10.5px;color:var(--muted);margin:7px 2px 0;line-height:1.6}
+  .aibar{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin:9px 2px 0}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--teal2)}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid #cfe5dc;border-top-color:var(--teal);border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .fade{animation:fd .35s ease}
+  @keyframes fd{from{opacity:.25}to{opacity:1}}
+  details.set{margin-top:14px;font-size:12px;color:var(--muted)}
+  details.set summary{cursor:pointer}
+  details.set input{width:100%;margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+  .foot{font-size:10.5px;color:var(--muted);text-align:center;padding:14px}
+  @media print{.top,.tabs,#tab-plan,.btnrow,.aibar,.disc,details.set,.foot,#genrow{display:none!important}
+    body,.phone,.wrap{background:#fff;max-width:none;padding:0;margin:0}
+    .doc{border:none;box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="top">
+    <h1>情共1 照会文書 自動作成</h1>
+    <p>診療情報等連携共有料1（歯科 B011・120点）— 提案デモ</p>
+    <div class="tabs">
+      <button class="tab on" id="t1" onclick="showTab('plan')">段階提案</button>
+      <button class="tab" id="t2" onclick="showTab('demo')">ライブデモ</button>
+    </div>
+  </div>
+
+  <!-- ============ TAB 1: PLAN ============ -->
+  <div class="wrap" id="tab-plan">
+    <div class="note">
+      <b>大前提：</b>照会で本当に知りたい「他院の全身疾患・投薬」は自院に無い。だから自動化で削れるのは
+      <b>属性差込・疾患チェック・定型文・3か月管理・出力</b>まで。投資対効果のピークは Lv1〜Lv3。
+    </div>
+
+    <div class="seclabel">本線：文面生成（ここで多くの院は十分）</div>
+
+    <div class="card"><div class="lvrow">
+      <div class="badge opt">Lv0</div>
+      <div class="lvbody"><h3>現状（手書き／Word上書き）</h3>
+        <p class="meta">ベースライン・投資ゼロ</p>
+        <p>毎回ぜんぶ手作業。再照会管理は記憶か付箋。</p></div></div></div>
+
+    <div class="card"><div class="lvrow">
+      <div class="badge">Lv1</div>
+      <div class="lvbody"><h3>差込テンプレート化</h3>
+        <p class="meta"><span class="pill ai">AI不要</span>難易度★★・1〜2人日</p>
+        <p>Wordテンプレに属性差込→PDF→院内印刷。疾患→定型文を辞書で流し込み。ROIが最初に立つ。</p></div></div></div>
+
+    <div class="card"><div class="lvrow">
+      <div class="badge">Lv2</div>
+      <div class="lvbody"><h3>入力UI＋疾患チェック支援</h3>
+        <p class="meta"><span class="pill ai">AI不要</span><span class="pill rec">推奨</span>難易度★★★・2〜4人日</p>
+        <p>チェックに応じて段落を自動構成。手作業はチェックのワンタップだけに。<b>多くの院はここで十分。</b></p></div></div></div>
+
+    <div class="card"><div class="lvrow">
+      <div class="badge">Lv3</div>
+      <div class="lvbody"><h3>留意点を動的反映＋文面の揺らぎ</h3>
+        <p class="meta"><span class="pill ai">ローカルLLM任意</span>難易度★★★・到達点</p>
+        <p>骨吸収抑制薬→MRONJ、抗血栓→止血…を自動挿入。言い回しだけローカルLLMで自然化。</p></div></div></div>
+
+    <div class="seclabel">任意レーン（本線と独立・自院環境しだい）</div>
+
+    <div class="card"><div class="lvrow">
+      <div class="badge opt">Lv4</div>
+      <div class="lvbody"><h3>レセコン／カルテ連携</h3>
+        <p class="meta"><span class="pill opt">任意</span>難易度★★★★・要ORCA等</p>
+        <p>属性の手入力を省略。ただし削れるのは属性＋自院傷病名のみ（本丸は埋まらない）。</p></div></div></div>
+
+    <div class="card"><div class="lvrow">
+      <div class="badge opt">Lv5</div>
+      <div class="lvbody"><h3>3か月算定管理</h3>
+        <p class="meta"><span class="pill opt">任意</span>難易度★★★・まず一覧表示</p>
+        <p>再照会タイミング・重複/算定漏れ防止。B009併算定は警告止まりで深追いしない。</p></div></div></div>
+
+    <div class="seclabel">やらないこと（過剰設計）</div>
+    <div class="card">
+      <div class="lvrow" style="margin-bottom:9px"><div class="badge no">×</div>
+        <div class="lvbody"><h3 style="font-size:13px">電子カルテの内製</h3>
+          <p>既存様式・内蔵機能・OSS差込で足りる。</p></div></div>
+      <div class="lvrow" style="margin-bottom:9px"><div class="badge no">×</div>
+        <div class="lvbody"><h3 style="font-size:13px">患者情報をクラウドAIに送信</h3>
+          <p>厚労省ガイドライン第6.0版に抵触リスク。文面生成は院内で完結。</p></div></div>
+      <div class="lvrow"><div class="badge no">×</div>
+        <div class="lvbody"><h3 style="font-size:13px">LLMに事実・留意点を判断させる</h3>
+          <p>LLMは言い回しだけ。臨床的留意点はルール＋歯科医師監修。</p></div></div>
+    </div>
+
+    <div class="note" style="background:var(--tealbg);border-color:#bfe6d6;color:#0f4a3a">
+      <b>進め方：</b>まず現用レセコンに情共発行機能があるか確認 →（無ければ）Lv1で着手 → 手間ならLv2 →
+      留意点を確実に反映したいならLv3。<br>右上の「ライブデモ」で Lv3 相当の動作を体験できます。
+    </div>
+  </div>
+
+  <!-- ============ TAB 2: DEMO ============ -->
+  <div class="wrap hide" id="tab-demo">
+    <div class="card">
+      <div class="seclabel" style="margin:0 0 9px">患者情報</div>
+      <div class="grid2">
+        <label class="fld"><span>患者氏名</span><input id="f_name" value="山田 花子"></label>
+        <label class="fld"><span>ふりがな</span><input id="f_kana" value="やまだ はなこ"></label>
+      </div>
+      <div class="grid2">
+        <label class="fld"><span>生年月日</span><input id="f_dob" type="date" value="1952-04-18"></label>
+        <label class="fld"><span>性別</span>
+          <div class="radios" id="f_sex">
+            <button type="button" data-v="女" class="on" onclick="pickSex(this)">女</button>
+            <button type="button" data-v="男" onclick="pickSex(this)">男</button>
+          </div></label>
+      </div>
+      <div class="grid2">
+        <label class="fld"><span>電話番号</span><input id="f_tel" value="090-1234-5678"></label>
+        <label class="fld"><span>傷病名</span><input id="f_dx" value="歯周病"></label>
+      </div>
+      <label class="fld"><span>患者住所</span><input id="f_addr" value="高知県高知市○○町1-2-3"></label>
+      <div class="grid2">
+        <label class="fld"><span>照会先 医療機関名</span><input id="f_dest" value="○○内科クリニック"></label>
+        <label class="fld"><span>照会先 担当医名</span><input id="f_doc" value="○○ 先生"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="seclabel" style="margin:0 0 4px">全身疾患（タップで選択）</div>
+      <p class="disc" style="margin:0 0 9px">選んだ疾患に応じて、観血処置の留意点が文書に自動で入ります。</p>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div id="genrow">
+      <button class="btn" onclick="generate()">照会文書を作成</button>
+    </div>
+
+    <div id="out" class="hide">
+      <div class="seclabel">生成された照会文書</div>
+      <div class="doc" id="doc"></div>
+
+      <div class="aibar" id="aibar">
+        <span class="dot"></span>
+        <span id="aitext">文面の揺らぎ：内蔵パターンで再現中（本番は院内ローカルLLM）</span>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn sec" id="varybtn" onclick="vary()">文面を少し変える（AI）</button>
+        <button class="btn ghost" onclick="window.print()">印刷／PDF</button>
+      </div>
+
+      <p class="disc">※ 留意点・文面はデモ用の例示です。実装時は疾患→留意点の医学的マッピングを歯科医師が監修し、
+        LLMには「言い回しの自然化」のみを担わせます（事実・留意点の判断はルールベース＋人手確認）。</p>
+
+      <details class="set">
+        <summary>（任意）実APIで言い換える設定</summary>
+        <p style="margin:7px 0 0">本番はローカルLLM想定です。デモで実際のAPIを試す場合のみ、Anthropic APIキーを入力すると
+          「文面を少し変える」が実APIを呼びます（未入力なら内蔵パターンで動作）。キーはこの画面内だけで保持します。</p>
+        <input id="apikey" type="password" placeholder="sk-ant-... （任意・空でもデモは動きます）">
+      </details>
+    </div>
+
+    <div class="foot">情共1（B011）には厚労省指定の様式番号はなく、記載事項イ〜ホを満たす任意様式でよい／本デモはレセコン非依存・院内完結を想定</div>
+  </div>
+</div>
+
+<script>
+/* ---------- 疾患マスタ（チェック項目→留意点） ---------- */
+var DISEASES = [
+  {id:'antithrombo', label:'血がサラサラになる薬', warn:true,
+    care:'抗血栓薬を服用中です。観血処置時の出血・休薬可否の判断のため、薬剤名およびPT-INR等の検査値をご教示ください（原則は継続下での局所止血を想定）。'},
+  {id:'bone', label:'骨粗鬆症等（骨吸収抑制剤）', warn:true,
+    care:'骨吸収抑制薬（BP製剤／抗RANKL抗体等）に伴う薬剤関連顎骨壊死（MRONJ）のリスクを考慮し、薬剤名・投与経路（経口／注射）・投与目的・投与期間・休薬可否をご教示ください。'},
+  {id:'htn', label:'高血圧・不整脈',
+    care:'観血処置・局所麻酔（エピネフリン含有）に伴う血圧・循環動態への影響を考慮し、コントロール状況と服薬内容をご教示ください。'},
+  {id:'dm', label:'糖尿病', warn:true,
+    care:'糖尿病に伴う易感染性・創傷治癒遅延を考慮し、血糖コントロール状況（HbA1c等）をご教示ください。'},
+  {id:'neuro', label:'脳血管障害・認知症・てんかん',
+    care:'脳血管障害・てんかん等の既往を考慮し、発作リスク・抗てんかん薬・抗血栓薬の有無をご教示ください。'},
+  {id:'resp', label:'呼吸器疾患（喘息/COPD）',
+    care:'喘息・COPD等を考慮し、使用薬剤（吸入ステロイド等）と発作誘発に留意すべき点をご教示ください。'},
+  {id:'heart', label:'心疾患（心内膜炎/手術歴等）', warn:true,
+    care:'感染性心内膜炎の予防を要する病態の有無、観血処置前の抗菌薬予防投与の要否、ペースメーカー等の有無をご教示ください。'},
+  {id:'psy', label:'精神疾患',
+    care:'向精神薬の使用状況（口腔乾燥・出血傾向・相互作用）について、薬剤名をご教示ください。'},
+  {id:'inf', label:'感染症（HIV/結核/梅毒）',
+    care:'標準予防策の徹底に必要な感染情報について、現在の状態をご教示ください。'},
+  {id:'ra', label:'関節リウマチ',
+    care:'免疫抑制薬・ステロイド使用に伴う易感染性・治癒遅延を考慮し、使用薬剤と用量・期間をご教示ください。'},
+  {id:'dialysis', label:'腎透析中・副腎皮質機能不全', warn:true,
+    care:'透析日程・抗凝固の影響による止血への配慮、薬剤の腎排泄・用量調整、ステロイドカバーの要否についてご教示ください。'},
+  {id:'hep', label:'肝炎（A/B/C）',
+    care:'標準予防策と出血傾向（肝機能低下に伴う）への配慮のため、型・現在の状態をご教示ください。'},
+  {id:'nerv', label:'神経難病（パーキンソン/ALS）',
+    care:'嚥下・誤嚥リスク、体動・開口保持の制約を考慮し、現在の状態と服薬をご教示ください。'},
+  {id:'thyroid', label:'甲状腺疾患（亢進/低下）',
+    care:'甲状腺機能の状態（処置時の循環動態への影響）と服薬内容をご教示ください。'}
+];
+var selected = {};
+DISEASES.forEach(function(d){ selected[d.id]=false; });
+/* 初期選択（デモ映え用） */
+selected.dm=true; selected.bone=true; selected.antithrombo=true;
+
+/* ---------- チップ描画 ---------- */
+(function(){
+  var c=document.getElementById('chips');
+  DISEASES.forEach(function(d){
+    var b=document.createElement('div');
+    b.className='chip'+(d.warn?' warn':'')+(selected[d.id]?' on':'');
+    b.textContent=d.label;
+    b.onclick=function(){ selected[d.id]=!selected[d.id]; b.classList.toggle('on'); };
+    c.appendChild(b);
+  });
+})();
+
+/* ---------- UI ---------- */
+function showTab(w){
+  document.getElementById('tab-plan').classList.toggle('hide', w!=='plan');
+  document.getElementById('tab-demo').classList.toggle('hide', w!=='demo');
+  document.getElementById('t1').classList.toggle('on', w==='plan');
+  document.getElementById('t2').classList.toggle('on', w==='demo');
+  window.scrollTo(0,0);
+}
+var sex='女';
+function pickSex(el){ sex=el.dataset.v;
+  Array.prototype.forEach.call(el.parentNode.children,function(x){x.classList.remove('on')}); el.classList.add('on'); }
+
+/* ---------- 元号・年齢 ---------- */
+function wareki(d){
+  var y=d.getFullYear(), md=(d.getMonth()+1)*100+d.getDate();
+  if(y>2019 || (y===2019&&md>=501)) return '令和'+(y-2018);
+  if(y>1989 || (y===1989&&md>=108)) return '平成'+(y-1988);
+  if(y>1926 || (y===1926&&md>=1225)) return '昭和'+(y-1925);
+  return '大正'+(y-1911);
+}
+function calcAge(d){
+  var t=new Date(), a=t.getFullYear()-d.getFullYear();
+  var m=t.getMonth()-d.getMonth(); if(m<0||(m===0&&t.getDate()<d.getDate())) a--; return a;
+}
+function fmtDob(v){
+  if(!v) return '';
+  var d=new Date(v+'T00:00:00');
+  return wareki(d)+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+calcAge(d)+'歳）';
+}
+
+/* ---------- 病状経過 文面（揺らぎ用バリエーション） ---------- */
+function bodyVariations(name,dx){
+  var n2='（令和6年改定により、ご返書の際に貴院で情共2〔120点〕の算定が可能です。）';
+  return [
+'患者'+name+'様の上記疾患に関して、情報共有・連携をお願い申し上げます。当院では現在、'+dx+'の治療を行っており、今後、抜歯や観血的処置等を行う可能性があります。つきましては、治療上留意すべき点や貴院での投薬状況等をご教示いただけますと幸いです。また、当院でチェックできていない疾患がございましたら、併せてお知らせください。何卒よろしくお願い申し上げます。\n'+n2,
+'平素より大変お世話になっております。'+name+'様の上記疾患につき、診療情報の連携共有をお願い申し上げます。当院にて'+dx+'の加療中であり、今後観血的処置を要する場合がございます。治療を進めるうえでの留意点、及び貴院での投薬状況をご教示賜りますようお願い申し上げます。記載のない疾患がございましたら併せてご教示ください。\n'+n2,
+name+'様について、上記の全身疾患に関する情報共有をお願いいたします。当院では'+dx+'の治療中で、抜歯・観血処置の可能性があります。処置上の留意点と現在の投薬内容をご教示ください。未記載の疾患があればお知らせいただけますと幸いです。\n'+n2,
+'いつもお世話になっております。'+name+'様の全身状態について情報共有をお願いします。当院では'+dx+'の治療を行っており、抜歯等の観血処置を予定する場合があります。注意点や投薬内容についてご教示いただけると助かります。チェックもれの疾患があればお知らせください。\n'+n2
+  ];
+}
+var varIdx=0;
+
+/* ---------- 文書生成 ---------- */
+function selectedDiseases(){ return DISEASES.filter(function(d){return selected[d.id];}); }
+function buildBody(){
+  var name=document.getElementById('f_name').value||'　';
+  var dx=document.getElementById('f_dx').value||'歯周病';
+  return bodyVariations(name,dx)[varIdx % 4];
+}
+function generate(){
+  varIdx=0;
+  var g=function(id){return document.getElementById(id).value;};
+  var ds=selectedDiseases();
+  var dlist = ds.length? ds.map(function(d){return d.label;}).join('、') : '（特記なし）';
+  var care = ds.length? '<div class="field"><h4>提供を求める内容（疾患連動の留意点・自動挿入）</h4><div class="care"><ul>'+
+      ds.map(function(d){return '<li>'+d.care+'</li>';}).join('')+'</ul></div></div>'
+    : '';
+  var html=''
+   +'<h2>診療情報提供のお願い（情共1）</h2>'
+   +'<p class="lead">'+g('f_name')+' 様の疾患に関する情報を連携共有したく、何卒宜しくお願いいたします。</p>'
+   +'<table>'
+   +'<tr><td class="k">患者氏名</td><td>'+g('f_name')+'（'+g('f_kana')+'）</td></tr>'
+   +'<tr><td class="k">生年月日</td><td>'+fmtDob(g('f_dob'))+'　'+sex+'</td></tr>'
+   +'<tr><td class="k">患者住所</td><td>'+g('f_addr')+'</td></tr>'
+   +'<tr><td class="k">電話番号</td><td>'+g('f_tel')+'</td></tr>'
+   +'<tr><td class="k">傷病名</td><td>'+g('f_dx')+'</td></tr>'
+   +'<tr><td class="k">照会目的</td><td>全身疾患の状態や投薬などの確認</td></tr>'
+   +'<tr><td class="k">該当する全身疾患</td><td>'+dlist+'</td></tr>'
+   +'</table>'
+   +care
+   +'<div class="field"><h4>病状経過</h4><div class="body" id="bodytext">'+buildBody()+'</div></div>'
+   +'<div class="sign">'+g('f_dest')+'　'+g('f_doc')+' 御侍史<br>（発行：当院 歯科　担当歯科医師）</div>';
+  document.getElementById('doc').innerHTML=html;
+  document.getElementById('out').classList.remove('hide');
+  document.getElementById('out').scrollIntoView({behavior:'smooth'});
+}
+
+/* ---------- 文面の揺らぎ（デモ＝内蔵 / 任意＝実API） ---------- */
+function setBody(txt){
+  var el=document.getElementById('bodytext'); if(!el) return;
+  el.textContent=txt; el.classList.remove('fade'); void el.offsetWidth; el.classList.add('fade');
+}
+async function vary(){
+  var key=(document.getElementById('apikey')||{}).value||'';
+  var btn=document.getElementById('varybtn');
+  var aitext=document.getElementById('aitext');
+  if(key.trim()){
+    btn.disabled=true; aitext.innerHTML='<span class="spin"></span> 実APIで言い換え中…';
+    try{
+      var cur=document.getElementById('bodytext').textContent;
+      var prompt='次の歯科→医科の照会文の「病状経過」を、敬体ビジネス文として自然に言い換えてください。'
+        +'制約：事実・固有名詞・「情共2／120点」の記載は変えない。文章のみ返す。\n\n'+cur;
+      var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+        headers:{'content-type':'application/json','x-api-key':key.trim(),
+          'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,
+          messages:[{role:'user',content:prompt}]})});
+      var j=await r.json();
+      if(j.content&&j.content[0]&&j.content[0].text){ setBody(j.content[0].text.trim()); }
+      else { throw new Error(j.error?j.error.message:'no content'); }
+      aitext.textContent='実API（Claude Haiku）で言い換えました。';
+    }catch(e){
+      varIdx++; setBody(buildBody());
+      aitext.textContent='API呼び出しに失敗したため内蔵パターンで表示しました（'+e.message+'）。';
+    }
+    btn.disabled=false;
+  } else {
+    varIdx++; setBody(buildBody());
+    aitext.textContent='文面の揺らぎ：内蔵パターン '+((varIdx%4)+1)+'/4（本番は院内ローカルLLMが生成）';
+  }
+}
+</script>
+</body>
+</html>
