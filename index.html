@@ -205,6 +205,13 @@
     </div>
 
     <div class="card">
+      <div class="seclabel" style="margin:0 0 4px">予定している処置（選択）</div>
+      <p class="disc" style="margin:0 0 9px">選んだ処置が照会文に反映されます。観血的処置ほど全身状態の確認が重要になります。</p>
+      <div class="chips" id="procchips"></div>
+      <label class="fld" style="margin-top:11px;margin-bottom:0"><span>その他の処置（自由記入）</span><input id="f_procother" placeholder="例：外科的歯内療法"></label>
+    </div>
+
+    <div class="card">
       <div class="seclabel" style="margin:0 0 4px">全身疾患（タップで選択）</div>
       <p class="disc" style="margin:0 0 9px">選んだ疾患に応じて、観血処置の留意点が文書に自動で入ります。</p>
       <div class="chips" id="chips"></div>
@@ -280,6 +287,21 @@ DISEASES.forEach(function(d){ selected[d.id]=false; });
 /* 初期選択（デモ映え用） */
 selected.dm=true; selected.bone=true; selected.antithrombo=true;
 
+/* ---------- 処置マスタ ---------- */
+var PROCS = [
+  {id:'ext',label:'抜歯'},
+  {id:'extdiff',label:'難抜歯・埋伏歯抜歯'},
+  {id:'srp',label:'スケーリング・SRP（歯周基本治療）'},
+  {id:'perio',label:'歯周外科手術'},
+  {id:'impl',label:'インプラント手術'},
+  {id:'inc',label:'切開・排膿'},
+  {id:'apico',label:'歯根端切除術'},
+  {id:'biopsy',label:'生検・小手術'}
+];
+var procSel = {};
+PROCS.forEach(function(p){ procSel[p.id]=false; });
+procSel.ext=true; procSel.srp=true;
+
 /* ---------- チップ描画 ---------- */
 (function(){
   var c=document.getElementById('chips');
@@ -291,6 +313,26 @@ selected.dm=true; selected.bone=true; selected.antithrombo=true;
     c.appendChild(b);
   });
 })();
+
+/* ---------- 処置チップ描画 ---------- */
+(function(){
+  var c=document.getElementById('procchips');
+  PROCS.forEach(function(p){
+    var b=document.createElement('div');
+    b.className='chip'+(procSel[p.id]?' on':'');
+    b.textContent=p.label;
+    b.onclick=function(){ procSel[p.id]=!procSel[p.id]; b.classList.toggle('on'); };
+    c.appendChild(b);
+  });
+})();
+function procArr(){
+  var a=PROCS.filter(function(p){return procSel[p.id];}).map(function(p){return p.label;});
+  var o=(document.getElementById('f_procother')||{}).value||'';
+  if(o.trim()) a.push(o.trim());
+  return a;
+}
+function procPhrase(){ var a=procArr(); return a.length? a.join('、')+'等' : '抜歯や観血的処置等'; }
+function procDisplay(){ var a=procArr(); return a.length? a.join('、') : '（未選択）'; }
 
 /* ---------- UI ---------- */
 function showTab(w){
@@ -323,13 +365,13 @@ function fmtDob(v){
 }
 
 /* ---------- 病状経過 文面（揺らぎ用バリエーション） ---------- */
-function bodyVariations(name,dx){
+function bodyVariations(name,dx,proc){
   var n2='（令和6年改定により、ご返書の際に貴院で情共2〔120点〕の算定が可能です。）';
   return [
-'患者'+name+'様の上記疾患に関して、情報共有・連携をお願い申し上げます。当院では現在、'+dx+'の治療を行っており、今後、抜歯や観血的処置等を行う可能性があります。つきましては、治療上留意すべき点や貴院での投薬状況等をご教示いただけますと幸いです。また、当院でチェックできていない疾患がございましたら、併せてお知らせください。何卒よろしくお願い申し上げます。\n'+n2,
-'平素より大変お世話になっております。'+name+'様の上記疾患につき、診療情報の連携共有をお願い申し上げます。当院にて'+dx+'の加療中であり、今後観血的処置を要する場合がございます。治療を進めるうえでの留意点、及び貴院での投薬状況をご教示賜りますようお願い申し上げます。記載のない疾患がございましたら併せてご教示ください。\n'+n2,
-name+'様について、上記の全身疾患に関する情報共有をお願いいたします。当院では'+dx+'の治療中で、抜歯・観血処置の可能性があります。処置上の留意点と現在の投薬内容をご教示ください。未記載の疾患があればお知らせいただけますと幸いです。\n'+n2,
-'いつもお世話になっております。'+name+'様の全身状態について情報共有をお願いします。当院では'+dx+'の治療を行っており、抜歯等の観血処置を予定する場合があります。注意点や投薬内容についてご教示いただけると助かります。チェックもれの疾患があればお知らせください。\n'+n2
+'患者'+name+'様の上記疾患に関して、情報共有・連携をお願い申し上げます。当院では現在、'+dx+'の治療を行っており、今後、'+proc+'を行う可能性があります。つきましては、治療上留意すべき点や貴院での投薬状況等をご教示いただけますと幸いです。また、当院でチェックできていない疾患がございましたら、併せてお知らせください。何卒よろしくお願い申し上げます。\n'+n2,
+'平素より大変お世話になっております。'+name+'様の上記疾患につき、診療情報の連携共有をお願い申し上げます。当院にて'+dx+'の加療中であり、今後'+proc+'を要する場合がございます。治療を進めるうえでの留意点、及び貴院での投薬状況をご教示賜りますようお願い申し上げます。記載のない疾患がございましたら併せてご教示ください。\n'+n2,
+name+'様について、上記の全身疾患に関する情報共有をお願いいたします。当院では'+dx+'の治療中で、'+proc+'の可能性があります。処置上の留意点と現在の投薬内容をご教示ください。未記載の疾患があればお知らせいただけますと幸いです。\n'+n2,
+'いつもお世話になっております。'+name+'様の全身状態について情報共有をお願いします。当院では'+dx+'の治療を行っており、'+proc+'を予定する場合があります。注意点や投薬内容についてご教示いただけると助かります。チェックもれの疾患があればお知らせください。\n'+n2
   ];
 }
 var varIdx=0;
@@ -339,7 +381,7 @@ function selectedDiseases(){ return DISEASES.filter(function(d){return selected[
 function buildBody(){
   var name=document.getElementById('f_name').value||'　';
   var dx=document.getElementById('f_dx').value||'歯周病';
-  return bodyVariations(name,dx)[varIdx % 4];
+  return bodyVariations(name,dx,procPhrase())[varIdx % 4];
 }
 function generate(){
   varIdx=0;
@@ -359,6 +401,7 @@ function generate(){
    +'<tr><td class="k">電話番号</td><td>'+g('f_tel')+'</td></tr>'
    +'<tr><td class="k">傷病名</td><td>'+g('f_dx')+'</td></tr>'
    +'<tr><td class="k">照会目的</td><td>全身疾患の状態や投薬などの確認</td></tr>'
+   +'<tr><td class="k">予定している処置</td><td>'+procDisplay()+'</td></tr>'
    +'<tr><td class="k">該当する全身疾患</td><td>'+dlist+'</td></tr>'
    +'</table>'
    +care
